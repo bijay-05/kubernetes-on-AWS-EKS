@@ -68,3 +68,51 @@ resource "aws_eks_access_policy_association" "first_eks_access_policy_associatio
     type       = "cluster"
   }
 }
+
+resource "aws_iam_openid_connect_provider" "first_eks_cluster_oidc_provider" {
+  client_id_list  = ["sts.amazonaws.com"]
+  url             = aws_eks_cluster.first_eks_cluster.identity[0].oidc[0].issuer
+}
+
+data "aws_iam_policy_document" "ebs_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.first_eks_cluster_oidc_provider.url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+
+    principals {
+      identifiers = [aws_iam_openid_connect_provider.first_eks_cluster_oidc_provider.arn]
+      type        = "Federated"
+    }
+  }
+}
+
+####################################################
+### IAM Role for EBS CSI Driver Service Accounts ###
+####################################################
+
+resource "aws_iam_role" "ebs_csi_driver_role" {
+  assume_role_policy = data.aws_iam_policy_document.ebs_assume_role_policy.json
+  name               = "AmazonEBSCSIDriverSARole"
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_driver_role_policy_attachment" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEBSCSIDriverPolicyV2"
+  role       = aws_iam_role.ebs_csi_driver_role.name
+}
+
+####################################################
+########### EKS Addon - EBS CSI Driver #############
+####################################################
+
+resource "aws_eks_addon" "ebs_csi_driver_addon" {
+  cluster_name = aws_eks_cluster.first_eks_cluster.name
+  addon_name = "aws-ebs-csi-driver"
+  addon_version = "v1.66.0-eksbuild.1"
+  service_account_role_arn = aws_iam_role.ebs_csi_driver_role.arn
+}
