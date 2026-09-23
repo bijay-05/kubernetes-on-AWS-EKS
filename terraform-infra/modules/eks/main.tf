@@ -92,6 +92,24 @@ data "aws_iam_policy_document" "ebs_assume_role_policy" {
   }
 }
 
+data "aws_iam_policy_document" "alb_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(aws_iam_openid_connect_provider.first_eks_cluster_oidc_provider.url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
+    }
+
+    principals {
+      identifiers = [aws_iam_openid_connect_provider.first_eks_cluster_oidc_provider.arn]
+      type        = "Federated"
+    }
+  }
+}
+
 ####################################################
 ### IAM Role for EBS CSI Driver Service Accounts ###
 ####################################################
@@ -115,4 +133,22 @@ resource "aws_eks_addon" "ebs_csi_driver_addon" {
   addon_name = "aws-ebs-csi-driver"
   addon_version = "v1.66.0-eksbuild.1"
   service_account_role_arn = aws_iam_role.ebs_csi_driver_role.arn
+}
+
+#################################################################
+### IAM Role for AWS LoadBalancer Controller Service Accounts ###
+#################################################################
+
+data "aws_iam_policy" "aws_lb_controller_policy" {
+  name = "AWSLoadBalancerControllerIAMPolicy"
+}
+
+resource "aws_iam_role" "aws_lb_controller_role" {
+  assume_role_policy = data.aws_iam_policy_document.alb_assume_role_policy.json
+  name               = "AWSLoadBalancerController_Role"
+}
+
+resource "aws_iam_role_policy_attachment" "aws_lb_controller_policy_attachment" {
+  policy_arn = data.aws_iam_policy.aws_lb_controller_policy.arn
+  role       = aws_iam_role.aws_lb_controller_role.name
 }
