@@ -6,7 +6,7 @@ apt update && apt install awscli tmux git -y
 
 sleep 3
 
-cd /home/ubuntu && git clone https://github.com/bijaypachhai/dotfiles.git && cp /home/ubuntu/dotfiles/ghostty/.tmux.conf /home/ubuntu/.tmux.conf && cp /home/ubuntu/dotfiles/ghostty/ghostty-info /home/ubuntu/ghostty-info && rm -r /home/ubuntu/dotfiles
+cd /home/ubuntu && git clone https://github.com/bijaypachhai/dotfiles.git && cp /home/ubuntu/dotfiles/ghostty/.tmux.conf /home/ubuntu/.tmux.conf && cp /home/ubuntu/dotfiles/ghostty/ghostty-info /home/ubuntu/ghostty-info && cp /home/ubuntu/dotfiles/bash/.bash_aliases /home/ubuntu/.bash_aliases && rm -r /home/ubuntu/dotfiles
 
 sleep 2
 
