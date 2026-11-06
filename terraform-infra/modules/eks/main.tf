@@ -152,3 +152,50 @@ resource "aws_iam_role_policy_attachment" "aws_lb_controller_policy_attachment" 
   policy_arn = data.aws_iam_policy.aws_lb_controller_policy.arn
   role       = aws_iam_role.aws_lb_controller_role.name
 }
+
+##################################################
+########### EKS CAPABILITY FOR ARGOCD  ###########
+data "aws_iam_policy_document" "argocd_assume_role_policy" {
+    statement {
+      effect = "Allow"
+      principals {
+        type = "Service"
+        identifiers = ["capabilities.eks.amazonaws.com"]
+      }
+      actions = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }
+}
+
+# data "aws_iam_policy" "aws_secrets_manager_read_policy" {
+#   name = "AWSSecretsManagerClientReadOnlyAccess"
+# }
+
+# resource "aws_iam_role" "aws_eks_argocd_capability_role" {
+#   assume_role_policy = data.aws_iam_policy_document.argocd_assume_role_policy.json
+#   name               = "AWSEKSArgoCDCapability_Role"
+# }
+
+# resource "aws_iam_role_policy_attachment" "aws_eks_argocd_policy_attachment" {
+#   policy_arn = data.aws_iam_policy.aws_secrets_manager_read_policy.arn
+#   role       = aws_iam_role.aws_eks_argocd_capability_role.name
+# }
+
+# resource "aws_eks_capability" "first_cluster_argocd_capability" {
+#   cluster_name              = aws_eks_cluster.first_eks_cluster.name
+#   capability_name           = "argocd"
+#   type                      = "ARGOCD"
+#   role_arn                  = aws_iam_role.aws_eks_argocd_capability_role.arn
+#   delete_propagation_policy = "RETAIN"
+
+#   configuration {
+#     argo_cd {
+#       aws_idc {
+#         idc_instance_arn = "arn:aws:sso:::instance/ssoins-1234567890abcdef0"
+#       }
+#       namespace = "argocd"
+#     }
+#   }
+# }
